@@ -5,15 +5,18 @@ html, body {
 canvas {
   display: block;
 }
-input[type="text"] {
-    font-family: monospace;
-}
-/* #fInput {
-  font-family: serif;
-  position: absolute;
-  left: 80px;
-  top: 2px;
-  width: 200px;
-  height: 30px;
+input.asciimath[type="text"] {
+  font-family: monospace;
   color: white;
-} */
+  background-color: black;
+  border-color: white;
+  border-radius: 3px;
+}
+.MathJax {
+  font-size: 24px !important;
+  color: white;
+}
+span {
+  font-family: sans-serif;
+  color: white;
+}

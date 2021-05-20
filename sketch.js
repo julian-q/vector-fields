@@ -1,37 +1,35 @@
-const N_STEP = 10;
-const V_LEN = 15;
-const SCALE = 0.1;
+let xStepSize = 100;
+let yStepSize = 100;
+let vLength = 15;
+let scale = 2;
 
 var canvas;
 var fInput;
 var gInput;
-let field = [
-	math.parse("x"),
-	math.parse("y")
-];
-field[0].compile();
-field[1].compile();
+var eqRenderer;
+
+let field;
 let origin;
 
-var MQ = MathQuill.getInterface(2);
-var fMathField;
-var gMathField;
+let validEq = true;
 
 function setup() {
   canvas = createCanvas(windowWidth, windowHeight);
 	canvas.position(0, 0);
 
-	fInput = createSpan("");
+	fInput = createInput("-y");
+	fInput.class("asciimath");
 	fInput.position(80, 2);
-	fInput.style("color", "white");
-	fMathField = MQ.MathField(fInput.elt);
 
-	gInput = createSpan("");
-	gInput.position(80, 2);
-	gInput.style("color", "white");
-	gMathField = MQ.MathField(gInput.elt);
+	gInput = createInput("x");
+	gInput.class("asciimath");
+	gInput.position(80, 26);
 
-  // updateField(fInput.latex(), gInput.latex());
+	eqRenderer = createSpan("");
+	eqRenderer.position(100, 100);
+
+	field = createVector(0, 0);
+  updateField(fInput.value(), gInput.value());
 
   origin = createVector(width/2, height/2);
 }
@@ -39,11 +37,17 @@ function setup() {
 function draw() {
   background(0);
 
-  drawField(field);
+	if (mouseIsPressed) {
+    updateOrigin();
+  }
 
-  stroke(0);
-  fill(0);
-  rect(0, 0, 290, 50);
+	stroke(255);
+	line(origin.x, 0, origin.x, height);
+	line(0, origin.y, width, origin.y);
+
+	if (validEq) {
+		drawField(field);
+	}
 
   stroke(0);
   fill(255);
@@ -51,29 +55,35 @@ function draw() {
   textStyle(BOLD);
   text("f(x, y) = ", 5, 15);
   text("g(x, y) = ", 5, 38);
-
-  if (mouseIsPressed) {
-    updateOrigin();
-  }
 }
 
 function drawField(field) {
-  let xStepSize = width/N_STEP;
-  let yStepSize = height/N_STEP;
+	let left = origin.x;
+	let right = width - origin.x;
+	let top = origin.y;
+	let bottom = height - origin.y;
 
-  for (let i = xStepSize; i < width; i += xStepSize) {
-    for (let j = yStepSize; j < height; j += yStepSize) {
-      let scope = {
-        x: (i - origin.x) * SCALE,
-        y: (j - origin.y) * SCALE
+	push();
+	translate(origin.x, origin.y);
+
+	let xStart = -left + (left % xStepSize);
+	let xStop = right - (right % xStepSize);
+	let yStart = -top + (top % yStepSize);
+	let yStop = bottom - (bottom % yStepSize);
+
+  for (let i = xStart; i <= right; i += xStepSize) {
+    for (let j = yStart; j <= bottom; j += yStepSize) {
+			let scope = {
+        x: i * scale,
+        y: j * scale
       };
       let v = createVector(
-        field[0].evaluate(scope),
-        field[1].evaluate(scope)
+        field.x.evaluate(scope),
+        field.y.evaluate(scope)
       );
       let colorDeg = map(v.mag(), 0, 1000, 180, 0, true);
       v.normalize();
-      v.mult(V_LEN);
+      v.mult(vLength);
 
       let trianglePoints = [
         createVector(
@@ -104,15 +114,43 @@ function drawField(field) {
       );
     }
   }
+
+	// stroke(255);
+	// fill(255);
+	// rect(-left, -top, width - 100, height - 100);
+
+	pop();
 }
 
 function updateField(e1, e2) {
-  field = [
-    math.parse(e1),
-    math.parse(e2)
-  ];
-  field[0].compile();
-  field[1].compile();
+	field.x = math.parse(e1);
+	field.y = math.parse(e2);
+  field.x.compile();
+  field.y.compile();
+
+	validEq = true;
+
+	try {
+		let scope = {
+			x: 0,
+			y: 0
+		};
+		field.x.evaluate(scope);
+		field.y.evaluate(scope);
+	} catch(error) {
+		validEq = false;
+	}
+
+	if (validEq) {
+		eqRenderer.html(
+			"`[[f(x,y)], [g(x,y)]] = [[" + e1 + "], [" + e2 + "]]`"
+		);
+	} else {
+		eqRenderer.html(
+			"`[[f(x,y)], [g(x,y)]] = ` syntax error"
+		);
+	}
+	MathJax.typesetPromise();
 }
 
 function updateOrigin() {
@@ -127,6 +165,5 @@ function keyPressed() {
 }
 
 function windowResized() {
-	console.log("windowWidth: " + windowWidth + " windowHeight: " + windowHeight);
   resizeCanvas(windowWidth, windowHeight);
 }

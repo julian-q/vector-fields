@@ -1,0 +1,22 @@
+{
+  "name": "vector-fields",
+  "version": "1.0.0",
+  "description": "",
+  "main": "sketch.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/julian-q/vector-fields.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/julian-q/vector-fields/issues"
+  },
+  "homepage": "https://github.com/julian-q/vector-fields#readme",
+  "dependencies": {
+    "evaluatex": "^2.2.0"
+  }
+}
