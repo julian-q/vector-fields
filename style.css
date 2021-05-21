@@ -11,6 +11,8 @@ input.asciimath[type="text"] {
   background-color: black;
   border-color: white;
   border-radius: 3px;
+  width: 200px;
+  height: 18px;
 }
 .MathJax {
   font-size: 24px !important;
