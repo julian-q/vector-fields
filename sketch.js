@@ -1,52 +1,56 @@
+let infoImage;
+
+function preload() {
+  infoImage = loadImage("img/baseline_info_white_24dp.png");
+}
+
 var canvas;
 var fInput;
 var gInput;
 var eqRenderer;
 
-let minAspectRatio;
 let promptPosition;
-let plotPosition;
-let plotSize;
+let eqPosition
 let stepSize;
 let vLength;
 let scale;
 let field;
 let origin;
-
-let validEq = true;
+let validEq;
 
 function setup() {
   canvas = createCanvas(windowWidth, windowHeight);
   canvas.position(0, 0);
 
+  promptPosition = createVector(50, 50);
+  eqPosition = createVector(50, 200);
+
   fInput = createInput("-y");
   fInput.class("asciimath");
-  fInput.position(80, 2);
+  fInput.position(promptPosition.x + 135, promptPosition.y + 2);
 
   gInput = createInput("x");
   gInput.class("asciimath");
-  gInput.position(80, 26);
+  gInput.position(promptPosition.x + 135, promptPosition.y + 22);
 
   eqRenderer = createSpan("");
   eqRenderer.position(100, 100);
+  eqRenderer.position(eqPosition.x, eqPosition.y);
 
-  minAspectRatio = 4/3;
-  promptPosition = createVector(0, 0);
-  plotPosition = createVector(0, 0);
-  plotSize = createVector(0, 0);
-  updateLayout();
   stepSize = createVector(50, 50);
   vLength = 15;
   scale = 2;
   field = createVector(0, 0);
   updateField(fInput.value(), gInput.value());
   origin = createVector(width/2, height/2);
+  validEq = true;
 }
 
 function draw() {
-  background(0);
+  background(0);;
   drawPlot();
   drawPrompt();
+  drawLaTeX();
 }
 
 function drawPlot() {
@@ -64,27 +68,21 @@ function drawPlot() {
 function drawAxes() {
   stroke(255);
   strokeWeight(4);
-  noFill();
-  rect(plotPosition.x, plotPosition.y, plotSize.x, plotSize.y);
-	line(origin.x, plotPosition.y, origin.x, plotPosition.y + plotSize.y);
-	line(plotPosition.x, origin.y, plotPosition.x + plotSize.x, origin.y);
+	line(origin.x, 0, origin.x, height);
+	line(0, origin.y, width, origin.y);
 }
 
 function drawField(field) {
 	push();
 	translate(origin.x, origin.y);
 
-  let left = origin.x - plotPosition.x;
-  let right = plotPosition.x + plotSize.x - origin.x;
-  let top = origin.y - plotPosition.y;
-  let bottom = plotPosition.y + plotSize.y - origin.y;
   let start = createVector(
-    -left + (left % stepSize.x),
-    -top + (top % stepSize.y)
+    -origin.x + (origin.x % stepSize.x),
+    -origin.y + (origin.y % stepSize.y)
   );
 
-  for (let i = start.x; i <= right; i += stepSize.x) {
-    for (let j = start.y; j <= bottom; j += stepSize.y) {
+  for (let i = start.x; i < width; i += stepSize.x) {
+    for (let j = start.y; j < height; j += stepSize.y) {
 			let scope = {
         x: i * scale,
         y: j * scale
@@ -134,26 +132,68 @@ function drawField(field) {
 }
 
 function drawPrompt() {
+  stroke(255, 100);
+  strokeWeight(1)
+  fill(0, 180);
+  rect(promptPosition.x, promptPosition.y, 365, 75);
+
   noStroke();
   fill(255);
   textFont("Helvetica");
-  textSize(24);
+  textSize(12);
   textStyle(NORMAL);
-  text("AsciiMath Input", promptPosition.x, promptPosition.y - 20);
-  text("LaTeX Output", promptPosition.x + 405, promptPosition.y - 20)
-  text("Config", promptPosition.x + 600, promptPosition.y - 20)
+  text("AsciiMath Input", promptPosition.x + 5, promptPosition.y + 14);
+  image(infoImage, promptPosition.x + 90, promptPosition.y + 2);
   textFont("Courier New");
   textSize(16);
   textStyle(BOLD);
-  text("f(x,y)   =   ", promptPosition.x + 10, promptPosition.y + 16);
-  text("g(x,y)   =   ", promptPosition.x + 10, promptPosition.y + 40);
+  text("f(x,y)   =   ", promptPosition.x + 15, promptPosition.y + 36);
+  text("g(x,y)   =   ", promptPosition.x + 15, promptPosition.y + 60);
 
   stroke(255);
   strokeWeight(1.2);
-  drawBracket(promptPosition.x, promptPosition.y, 5, 50, true);
-  drawBracket(promptPosition.x + 75, promptPosition.y, 5, 50, false);
-  drawBracket(promptPosition.x + 125, promptPosition.y, 5, 50, true);
-  drawBracket(promptPosition.x + 355, promptPosition.y, 5, 50, false);
+  drawBracket(promptPosition.x + 5, promptPosition.y + 20, 5, 50, true);
+  drawBracket(promptPosition.x + 80, promptPosition.y + 20, 5, 50, false);
+  drawBracket(promptPosition.x + 130, promptPosition.y + 20, 5, 50, true);
+  drawBracket(promptPosition.x + 360, promptPosition.y + 20, 5, 50, false);
+
+  fInput.position(promptPosition.x + 140, promptPosition.y + 22);
+  gInput.position(promptPosition.x + 140, promptPosition.y + 42);
+}
+
+function drawLaTeX() {
+  // var elhg;
+  // var elwg;
+
+  // var checkEx = setInterval(function () {
+  //   let wrap = eqRenderer.elt;
+  //   var text = wrap.getElementsByClassName('MathJax')[0];
+  //   if (text) {
+  //     elHeight = wrap.getBoundingClientRect().height;
+  //     elWidth = wrap.getBoundingClientRect().width;
+  //
+  //     if (elhg === elHeight && elwg === elWidth) {
+  //         console.log(elHeight, elWidth);
+  //         clearInterval(checkEx);
+  //     }
+  //
+  //     elhg = elHeight;
+  //     elwg = elWidth;
+  //
+  //     stroke(255, 100);
+  //     strokeWeight(1)
+  //     fill(0, 180);
+  //     rect(eqPosition.x, eqPosition.y, elwg, elhg);
+  //   }
+  // }, 100);
+
+  noStroke();
+  fill(255);
+  textFont("Helvetica");
+  textSize(12);
+  textStyle(NORMAL);
+
+  eqRenderer.position(eqPosition.x - 2, eqPosition.y + 3);
 }
 
 function drawBracket(x, y, w, h, opening) {
@@ -164,26 +204,6 @@ function drawBracket(x, y, w, h, opening) {
   line(x, y, x, y + h);
   line(x, y, x + w, y);
   line(x, y + h, x + w, y + h);
-}
-
-function updateLayout() {
-  if (width/height >= minAspectRatio) {
-    plotPosition.x = 300;
-    plotPosition.y = 40;
-    promptPosition.x = 20;
-    promptPosition.y = 60;
-  } else {
-    plotPosition.x = 40;
-    plotPosition.y = 150;
-    promptPosition.x = 50;
-    promptPosition.y = 70;
-    eqRenderer.position(promptPosition.x + 400, promptPosition.y - 5);
-  }
-
-  fInput.position(promptPosition.x + 135, promptPosition.y + 2);
-  gInput.position(promptPosition.x + 135, promptPosition.y + 22);
-  plotSize.x = width - plotPosition.x - 40;
-  plotSize.y = height - plotPosition.y - 40;
 }
 
 function updateField(e1, e2) {
@@ -230,12 +250,16 @@ function keyPressed() {
 
 function mouseWheel(event) {
   scale -= event.delta * 0.01;
+
+  if (scale > 0) {
+    scale = 0;
+  }
+
   return false;
 }
 
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
-  updateLayout();
 }
 
 function clamp(value, min, max) {
