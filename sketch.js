@@ -1,3 +1,8 @@
+/*
+Vector Field Plotter
+by Julian Quevedo
+*/
+
 var canvas;
 var fInput;
 var gInput;
@@ -8,9 +13,11 @@ let promptPosition;
 let eqPosition;
 let eqSize;
 let stepSize;
-let vScale;
+let coordStepSize;
+let scaleIndex;
 let pixelScale;
 let field;
+let trajectories;
 let origin;
 let validEq;
 
@@ -22,11 +29,11 @@ function setup() {
   eqPosition = createVector(50, 200);
   eqSize = createVector(0, 0);
 
-  fInput = createInput("-y");
+  fInput = createInput("-x");
   fInput.class("asciimath");
   fInput.position(promptPosition.x + 135, promptPosition.y + 2);
 
-  gInput = createInput("x");
+  gInput = createInput("y");
   gInput.class("asciimath");
   gInput.position(promptPosition.x + 135, promptPosition.y + 22);
 
@@ -38,15 +45,16 @@ function setup() {
   link.position(promptPosition.x + 90, promptPosition.y + 2);
 
   origin = createVector(width/2, height/2);
-  stepSize = createVector(50, 50);
+  pixelStepSize = 173;
+  coordStepSize = 16.0;
   vLength = 15;
-  pixelScale = 2;
+  scaleIndex = 0.045;
+  pixelScale = scaleIndex;
   field = createVector(0, 0);
+  trajectories = [];
   updateField(fInput.value(), gInput.value());
   validEq = true;
 }
-
-let fps = 0;
 
 function draw() {
   background(0);
@@ -54,14 +62,6 @@ function draw() {
   drawPrompt();
   drawLaTeX();
   drawTrajectories();
-  // if (frameCount % 30 == 0) {
-  //   fps = frameRate();
-  // }
-  // noStroke();
-  // fill(255);
-  // textFont("Courier New");
-  // textSize(24);
-  // text("" + fps, width - 70, 20);
 }
 
 function drawPlot() {
@@ -84,28 +84,41 @@ function drawAxes() {
 }
 
 function drawField(field) {
-  let pixelStart = createVector(
-    (origin.x % stepSize.x) - stepSize.x,
-    (origin.y % stepSize.y) - stepSize.y
+  let start = createVector(
+    (origin.x % pixelStepSize) - pixelStepSize,
+    (origin.y % pixelStepSize) - pixelStepSize
   );
-  let pixelStop = createVector(
-    width + stepSize.x,
-    height + stepSize.y
+  let stop = createVector(
+    width + pixelStepSize,
+    height + pixelStepSize
   );
-  let graphStart = pixelToGraph(pixelStart);
-  let graphStop = pixelToGraph(pixelStop);
   colorMode(HSB);
-  for (let i = start.x; i <= stop.x; i += stepSize.x) {
+  for (let i = start.x; i < stop.x; i += pixelStepSize) {
     strokeWeight(1);
     stroke(210, 360, 180, 50);
-    for (let c = i; c < i + stepSize.x; c += stepSize.x / 4) {
+    for (let c = i; c < i + pixelStepSize; c += pixelStepSize / 4) {
       line(c, 0, c, height);
       stroke(210, 360, 30, 50);
     }
-    for (let j = start.y; j <= stop.y; j += stepSize.y) {
+    for (let j = start.y; j < stop.y; j += pixelStepSize) {
+      noStroke();
+      fill("white");
+      textSize(16);
+      textFont("Helvetica");
+      if ((i >= origin.x - 10 && i <= origin.x + 10 && j != origin.y) && !(j > origin.y - pixelStepSize && j < origin.y + pixelStepSize)) {
+        let graphY = (-j + origin.y) * pixelScale;
+        let yString = Math.abs(Math.floor(Math.log10(Math.abs(graphY)))) < 3 ? "" + Math.floor(graphY) : graphY.toExponential(1)
+        text("" + yString, i, j);
+      }
+      if ((j >= origin.y - 10 && j <= origin.y + 10 && i != origin.x) && !(i > origin.x - pixelStepSize && i < origin.x + pixelStepSize)) {
+        let graphX = (i - origin.x) * pixelScale;
+        let xString = Math.abs(Math.floor(Math.log10(Math.abs(graphX)))) < 3 ? "" + Math.floor(graphX) : graphX.toExponential(1)
+        text("" + xString, i, j);
+      }
+
       strokeWeight(1);
       stroke(210, 360, 180, 50);
-      for (let r = j; r < j + stepSize.y; r += stepSize.y / 4) {
+      for (let r = j; r < j + pixelStepSize; r += pixelStepSize / 4) {
         line(0, r, width, r);
         stroke(210, 360, 30, 50);
       }
@@ -118,10 +131,8 @@ function drawField(field) {
         field.y.evaluate(scope)
       );
       // Map the magnitude to a color of corresponding "warmth."
-      let colorDeg = map(v.mag(), 0, 1000, 180, 0, true);
-      // Normalize for drawing purposes.
-      // v.normalize();
-      v.mult(vScale);
+      let colorDeg = map(v.mag(), 0, 200, 180, 0, true);
+      v.mult(0.1 / pixelScale);
       // Compute the verticies of the triangle that will make up the arrowhead.
       let trianglePoints = [
         createVector(
@@ -156,7 +167,7 @@ function drawField(field) {
 
 function drawPrompt() {
   stroke(255, 50);
-  strokeWeight(1)
+  strokeWeight(1);
   fill(0, 180);
   rect(promptPosition.x, promptPosition.y, 365, 75);
   rect(promptPosition.x, promptPosition.y + 250, 180, 20);
@@ -210,22 +221,11 @@ function updateField(e1, e2) {
 	validEq = true;
 	try {
 		let scope = {
-			x: 0,
-			y: 0
+			x: 1,
+			y: 1
 		};
-		let originMagnitude = createVector(
-      field.x.evaluate(scope),
-		  field.y.evaluate(scope)
-    ).mag();
-    scope = {
-      x: (width - origin.x) * pixelScale,
-      y: (-height + origin.y) * pixelScale
-    };
-    let distantMagnitude = createVector(
-      field.x.evaluate(scope),
-		  field.y.evaluate(scope)
-    ).mag();
-    vScale = 50.0 / Math.max(originMagnitude, distantMagnitude);
+    field.x.evaluate(scope);
+    field.y.evaluate(scope);
 	} catch(error) {
 		validEq = false;
 	}
@@ -276,16 +276,26 @@ function keyPressed() {
 }
 
 function mouseWheel(event) {
-  pixelScale -= event.delta * 0.01;
-
-  if (pixelScale < 0) {
-    pixelScale = 0;
+  let delta = event.delta;
+  if (delta > 50) {
+    delta = 50;
+  } else if (delta < -50) {
+    delta = -50;
   }
 
-  let sign = event.delta < 0 ? 1 : -1;
+  let exp = Math.exp(delta * 0.01);
 
-  stepSize.x -= Math.pow(Math.abs(event.delta) * 0.01, 2) * sign;
-  stepSize.y -= Math.pow(Math.abs(event.delta) * 0.01, 2) * sign;
+  scaleIndex *= exp;
+  pixelScale = scaleIndex;
+  
+  if (pixelStepSize < 64) {
+    coordStepSize *= 2;
+  }
+  if (pixelStepSize > 256) {
+    coordStepSize /= 2;
+  }
+  pixelStepSize = (coordStepSize / pixelScale);
+  pixelStepSize = (coordStepSize / pixelScale);
 
   return false;
 }
@@ -293,12 +303,6 @@ function mouseWheel(event) {
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
 }
-
-function clamp(value, min, max) {
-  return Math.min(Math.max(value, min), max);
-}
-
-let trajectories = [];
 
 function doubleClicked() {
   let x = (mouseX - origin.x) * pixelScale;
@@ -321,10 +325,6 @@ function doubleClicked() {
 
   trajectories.push(trajectory);
 }
-
-
-// 0.5x * (1 - (x + 0.5y) / 200)
-// 0.5y * (1 - (y - 0.5x) / 200)
 
 function drawTrajectories() {
   for (let trajectory of trajectories) {
