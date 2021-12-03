@@ -69,9 +69,9 @@ function drawPlot() {
     updateOrigin();
   }
 
-	if (validEq) {
-		drawField(field);
-	}
+  if (validEq) {
+    drawField(field);
+  }
 
   drawAxes();
 }
@@ -79,8 +79,8 @@ function drawPlot() {
 function drawAxes() {
   stroke(255);
   strokeWeight(1);
-	line(origin.x, 0, origin.x, height);
-	line(0, origin.y, width, origin.y);
+  line(origin.x, 0, origin.x, height);
+  line(0, origin.y, width, origin.y);
 }
 
 function drawField(field) {
